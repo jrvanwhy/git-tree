@@ -170,6 +170,7 @@ fn includes_excludes(
         .args(interesting_branches)
         .arg("--not")
         .args(merge_bases)
+        .arg("--")
         .stdout(Stdio::piped())
         .spawn()
         .expect("failed to run git");
