@@ -1,6 +1,9 @@
 # git-tree
 
-*This is not an officially supported Google product.*
+History: This is a fork of https://github.com/google/git-tree, which (at the
+time of this writing) is no longer maintained and unlikely to be maintained
+anymore. As a result, I did not use GitHub's fork feature, as this is
+effectively the replacement project.
 
 `git-tree` is a wrapper around `git log` that heuristically determines what set
 of commits should be displayed. It is designed for use with branch-heavy
