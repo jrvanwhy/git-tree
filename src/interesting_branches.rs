@@ -17,11 +17,27 @@ use std::collections::HashSet;
 use std::io::{BufRead as _, BufReader};
 use std::process::{Command, Stdio};
 
+pub enum Error {
+    /// `git` returned status code 128. This can indicate many things, but the
+    /// most common is that the current directory is not in a git repository. In
+    /// that case, `git` already printed a helpful error message, so printing
+    /// another error message is not helpful. Unfortunately, there's not an easy
+    /// way to detect that (reading git's stderr and stdout simultaneously
+    /// requires nonblocking mode and a poll()-style syscall), so we just exit
+    /// silently anytime `git` returns 128 and hope that `git` has already
+    /// output a suitable error message to stdout.
+    Git128,
+}
+
 /// Returns all interesting branches. Note that some commits may be in the list
 /// multiple times under different names.
 /// Precondition: `buffer` must be empty
 /// Postcondition: `buffer` will be empty
-pub fn interesting_branches(buffer: &mut Vec<u8>) -> Vec<String> {
+#[allow(
+    clippy::panic_in_result_fn,
+    reason = "We'll decide how to handle non-128 statuses if we encounter them"
+)]
+pub fn interesting_branches(buffer: &mut Vec<u8>) -> Result<Vec<String>, Error> {
     // This considers a branch interesting if it is a local branch or if it has
     // the same name as a local branch.
     let mut git = Command::new("git")
@@ -56,6 +72,9 @@ pub fn interesting_branches(buffer: &mut Vec<u8>) -> Vec<String> {
         locals.into_iter().map(|local| String::from_utf8(local).expect("non-utf-8 branch")),
     );
     let status = git.wait().expect("failed to wait for git");
+    if status.code() == Some(128) {
+        return Err(Error::Git128);
+    }
     assert!(status.success(), "git returned unsuccessful status {status}");
-    interesting
+    Ok(interesting)
 }

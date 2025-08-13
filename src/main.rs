@@ -30,13 +30,15 @@ use includes_excludes::includes_excludes;
 use interesting_branches::interesting_branches;
 use merge_bases::merge_bases;
 use std::env::args_os;
-use std::process::Command;
+use std::process::{Command, ExitCode};
 
-fn main() {
+fn main() -> ExitCode {
     // Capacity estimate is a guess -- 4x as large as a SHA-256 hash seems
     // reasonable (and is a power of two).
     let mut buffer = Vec::with_capacity(256);
-    let interesting_branches = interesting_branches(&mut buffer);
+    let Ok(interesting_branches) = interesting_branches(&mut buffer) else {
+        return 128.into();
+    };
     let merge_bases = merge_bases(&mut buffer, &interesting_branches);
     let (includes, excludes) = includes_excludes(buffer, interesting_branches, &merge_bases);
     Command::new("git")
@@ -53,4 +55,5 @@ fn main() {
         .expect("Failed to run git")
         .wait()
         .expect("failed to wait for git");
+    ExitCode::SUCCESS
 }
